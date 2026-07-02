@@ -1,0 +1,29 @@
+server:
+  # Spring Cloud Config's conventional port. (The gateway was moved to 8080 to free this up.)
+  port: 8888
+
+spring:
+  application:
+    name: config-server
+  # Local by default; override with -Dspring.profiles.active=test|prod (or SPRING_PROFILES_ACTIVE).
+  profiles:
+    active: local
+  cloud:
+    config:
+      server:
+        git:
+          # Configuration is served from the configs/ folder of this Git repository, one sub-folder
+          # per service, e.g. configs/product-service/application-local.yml.
+          uri: https://github.com/HasanCanOrtatepe/Deneme.git
+          default-label: main
+          search-paths: 'configs/{application}'
+          clone-on-start: true
+          # For a PRIVATE repo, supply credentials (a GitHub Personal Access Token works as password):
+          # username: <github-username>
+          # password: <github-pat>
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

@@ -1,13 +1,12 @@
-server:
-  port: 8761
-
+# Thin client config. Everything else is fetched from config-server
+# (see configs/eureka-server/ in the Git repo). Bootstrap only needs:
+#   - the application name (which folder to fetch)
+#   - the active profile (which application-<profile>.yml to fetch)
+#   - where the config-server lives
 spring:
   application:
     name: eureka-server
-
-eureka:
-  client:
-    register-with-eureka: false
-    fetch-registry: false
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
+  profiles:
+    active: local
+  config:
+    import: configserver:${CONFIG_SERVER_URI:http://localhost:8888}

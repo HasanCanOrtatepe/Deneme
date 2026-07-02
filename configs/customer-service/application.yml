@@ -1,0 +1,49 @@
+# Common (profile-agnostic) configuration for customer-service, served by config-server.
+server:
+  port: 0
+
+spring:
+  # H2 in-memory database backing the Customer table and the Transactional Outbox table.
+  datasource:
+    url: jdbc:h2:mem:customerdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+  h2:
+    console:
+      path: /h2-console
+      settings:
+        web-allow-others: true
+  cloud:
+    stream:
+      bindings:
+        # Producer: the outbox relay sends customer lifecycle events -> Kafka topic "customer-events"
+        customerEvents-out-0:
+          destination: customer-events
+
+# Transactional Outbox polling publisher (Spring @Scheduled).
+outbox:
+  poller:
+    fixed-delay: 15000
+    batch-size: 100
+    max-retry: 5
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    instance-id: ${spring.application.name}:${random.uuid}
+    prefer-ip-address: true

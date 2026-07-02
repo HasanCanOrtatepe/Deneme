@@ -1,34 +1,9 @@
-server:
-  port: 0
-
+# Thin client config. Everything else is fetched from config-server
+# (see configs/product-service/ in the Git repo).
 spring:
   application:
     name: product-service
-  cloud:
-    function:
-      definition: orderCreated
-    stream:
-      kafka:
-        binder:
-          brokers: localhost:9092
-      bindings:
-        # Consumer: "orderCreated" function reads Kafka topic "order-created"
-        orderCreated-in-0:
-          destination: order-created
-          group: product-service
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
-
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
-    register-with-eureka: true # kendini ayağa kalktığın an eurekaya tanıt
-    fetch-registry: true # istenildiğinde diğer servislerin bilgisini çek
-  instance:
-    instance-id: ${spring.application.name}:${random.uuid}
-    prefer-ip-address: true
+  profiles:
+    active: local
+  config:
+    import: configserver:${CONFIG_SERVER_URI:http://localhost:8888}

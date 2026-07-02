@@ -1,52 +1,9 @@
-server:
-  port: 8888
-
+# Thin client config. Routes, port (8080) and the rest are fetched from config-server
+# (see configs/gateway-server/ in the Git repo).
 spring:
   application:
     name: gateway-server
-  cloud:
-    gateway:
-      server:
-        webflux:
-          routes:
-            # Gelen tüm /api/products istekleri product-service'e yönlendirilir.
-            # lb:// şeması: hedef adres Eureka'dan çözülür ve load balancing uygulanır.
-            - id: product-service
-              uri: lb://product-service
-              predicates:
-                - Path=/api/products/**
-            - id: order-service
-              uri: lb://order-service
-              predicates:
-                - Path=/api/orders/**
-            # Gelen tüm /api/customers istekleri customer-service'e yönlendirilir.
-            - id: customer-service
-              uri: lb://customer-service
-              predicates:
-                - Path=/api/customers/**
-            # Gelen tüm /api/carts istekleri cart-service'e yönlendirilir.
-            - id: cart-service
-              uri: lb://cart-service
-              predicates:
-                - Path=/api/carts/**
-            # Gelen tüm /api/notifications istekleri notification-service'e yönlendirilir.
-            - id: notification-service
-              uri: lb://notification-service
-              predicates:
-                - Path=/api/notifications/**
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,gateway
-
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
-    register-with-eureka: true # gateway kendini Eureka'ya kaydeder
-    fetch-registry: true # diğer servislerin (product-service) konumlarını Eureka'dan çeker
-  instance:
-    instance-id: ${spring.application.name}:${random.uuid}
-    prefer-ip-address: true
+  profiles:
+    active: local
+  config:
+    import: configserver:${CONFIG_SERVER_URI:http://localhost:8888}

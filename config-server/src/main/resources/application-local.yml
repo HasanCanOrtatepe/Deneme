@@ -1,0 +1,7 @@
+spring:
+  cloud:
+    config:
+      server:
+        git:
+          # Local development serves configuration from the main branch.
+          default-label: main

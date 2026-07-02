@@ -1,0 +1,51 @@
+# Common (profile-agnostic) configuration for notification-service, served by config-server.
+server:
+  port: 0
+
+spring:
+  # H2 in-memory database backing the notification log and the Inbox (idempotency) table.
+  datasource:
+    url: jdbc:h2:mem:notificationdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+  h2:
+    console:
+      path: /h2-console
+      settings:
+        web-allow-others: true
+  cloud:
+    # Three independent consumers, one per source topic.
+    function:
+      definition: orderCreated;customerEvents;cartCheckedOut
+    stream:
+      bindings:
+        orderCreated-in-0:
+          destination: order-created
+          group: notification-service
+        customerEvents-in-0:
+          destination: customer-events
+          group: notification-service
+        cartCheckedOut-in-0:
+          destination: cart-checked-out
+          group: notification-service
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    instance-id: ${spring.application.name}:${random.uuid}
+    prefer-ip-address: true

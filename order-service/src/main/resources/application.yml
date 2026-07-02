@@ -1,66 +1,9 @@
-server:
-  port: 0
-
+# Thin client config. Everything else is fetched from config-server
+# (see configs/order-service/ in the Git repo).
 spring:
   application:
     name: order-service
-
-  # H2 in-memory database backing the Transactional Outbox table.
-  datasource:
-    url: jdbc:h2:mem:orderdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: ""
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-  h2:
-    console:
-      enabled: true       # UI: http://<host>:<port>/h2-console  (JDBC URL: jdbc:h2:mem:orderdb, user: sa)
-      path: /h2-console
-      settings:
-        web-allow-others: true
-  cloud:
-    # Consumer function reading customer lifecycle events (order-service also produces via StreamBridge).
-    function:
-      definition: customerEvents
-    stream:
-      kafka:
-        binder:
-          brokers: localhost:9092
-      bindings:
-        # Producer: the outbox relay sends OrderCreated payloads here -> Kafka topic "order-created"
-        orderCreated-out-0:
-          destination: order-created
-        # Consumer: "customerEvents" function reads Kafka topic "customer-events" and applies each
-        # event to the local customer replica (Inbox / idempotency pattern).
-        customerEvents-in-0:
-          destination: customer-events
-          group: order-service
-
-# Transactional Outbox polling publisher (Spring @Scheduled).
-outbox:
-  poller:
-    fixed-delay: 15000   # ms between polls
-    batch-size: 100     # max events published per poll
-    max-retry: 5        # relay attempts before an event is marked FAILED
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
-
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
-    register-with-eureka: true # kendini ayağa kalktığın an eurekaya tanıt
-    fetch-registry: true # istenildiğinde diğer servislerin bilgisini çek
-  instance:
-    instance-id: ${spring.application.name}:${random.uuid}
-    prefer-ip-address: true
+  profiles:
+    active: local
+  config:
+    import: configserver:${CONFIG_SERVER_URI:http://localhost:8888}

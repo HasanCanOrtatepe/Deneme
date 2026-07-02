@@ -1,59 +1,9 @@
-server:
-  port: 0
-
+# Thin client config. Everything else is fetched from config-server
+# (see configs/customer-service/ in the Git repo).
 spring:
   application:
     name: customer-service
-
-  # H2 in-memory database backing both the Customer table and the Transactional Outbox table.
-  datasource:
-    url: jdbc:h2:mem:customerdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: ""
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-  h2:
-    console:
-      enabled: true       # UI: http://<host>:<port>/h2-console  (JDBC URL: jdbc:h2:mem:customerdb, user: sa)
-      path: /h2-console
-      settings:
-        web-allow-others: true
-  cloud:
-    stream:
-      kafka:
-        binder:
-          brokers: localhost:9092
-      bindings:
-        # Producer: the outbox relay sends every customer lifecycle event (CREATED/UPDATED/DELETED)
-        # to a single Kafka topic "customer-events" as a CustomerEvent envelope.
-        customerEvents-out-0:
-          destination: customer-events
-
-# Transactional Outbox polling publisher (Spring @Scheduled).
-outbox:
-  poller:
-    fixed-delay: 15000   # ms between polls
-    batch-size: 100      # max events published per poll
-    max-retry: 5         # relay attempts before an event is marked FAILED
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
-
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
-    register-with-eureka: true # kendini ayağa kalktığın an eurekaya tanıt
-    fetch-registry: true # istenildiğinde diğer servislerin bilgisini çek
-  instance:
-    instance-id: ${spring.application.name}:${random.uuid}
-    prefer-ip-address: true
+  profiles:
+    active: local
+  config:
+    import: configserver:${CONFIG_SERVER_URI:http://localhost:8888}

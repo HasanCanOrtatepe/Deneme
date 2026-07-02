@@ -1,0 +1,56 @@
+# Common (profile-agnostic) configuration for cart-service, served by config-server.
+server:
+  port: 0
+
+spring:
+  # H2 in-memory database backing the Cart aggregate, the Outbox and the Inbox tables.
+  datasource:
+    url: jdbc:h2:mem:cartdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+  h2:
+    console:
+      path: /h2-console
+      settings:
+        web-allow-others: true
+  cloud:
+    # Consumer function reading customer lifecycle events (cart-service also produces via StreamBridge).
+    function:
+      definition: customerEvents
+    stream:
+      bindings:
+        # Consumer: "customerEvents" -> local customer replica (Inbox pattern) to validate customerId.
+        customerEvents-in-0:
+          destination: customer-events
+          group: cart-service
+        # Producer: the outbox relay sends CartCheckedOut payloads -> Kafka topic "cart-checked-out"
+        cartCheckedOut-out-0:
+          destination: cart-checked-out
+
+# Transactional Outbox polling publisher (Spring @Scheduled).
+outbox:
+  poller:
+    fixed-delay: 15000
+    batch-size: 100
+    max-retry: 5
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    instance-id: ${spring.application.name}:${random.uuid}
+    prefer-ip-address: true

@@ -1,0 +1,21 @@
+spring:
+  jpa:
+    show-sql: false
+  h2:
+    console:
+      enabled: false
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: ${KAFKA_BROKERS:kafka-prod:9092}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_HOST:eureka-prod}:8761/eureka/
+
+logging:
+  level:
+    root: WARN
+    com.etiya: INFO

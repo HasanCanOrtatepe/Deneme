@@ -1,0 +1,8 @@
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_HOST:eureka-test}:8761/eureka/
+
+logging:
+  level:
+    root: INFO

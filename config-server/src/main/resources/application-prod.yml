@@ -1,0 +1,7 @@
+spring:
+  cloud:
+    config:
+      server:
+        git:
+          # In a real setup this would point to a dedicated "prod" branch/tag; kept on main here.
+          default-label: ${CONFIG_GIT_LABEL:main}

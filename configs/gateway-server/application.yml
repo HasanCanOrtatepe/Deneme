@@ -1,0 +1,50 @@
+# Common (profile-agnostic) configuration for gateway-server, served by config-server.
+# NOTE: the gateway now listens on 8080 (port 8888 was handed to config-server).
+server:
+  port: 8080
+
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            # Gelen tüm /api/products istekleri product-service'e yönlendirilir.
+            # lb:// şeması: hedef adres Eureka'dan çözülür ve load balancing uygulanır.
+            - id: product-service
+              uri: lb://product-service
+              predicates:
+                - Path=/api/products/**
+            - id: order-service
+              uri: lb://order-service
+              predicates:
+                - Path=/api/orders/**
+            # Gelen tüm /api/customers istekleri customer-service'e yönlendirilir.
+            - id: customer-service
+              uri: lb://customer-service
+              predicates:
+                - Path=/api/customers/**
+            # Gelen tüm /api/carts istekleri cart-service'e yönlendirilir.
+            - id: cart-service
+              uri: lb://cart-service
+              predicates:
+                - Path=/api/carts/**
+            # Gelen tüm /api/notifications istekleri notification-service'e yönlendirilir.
+            - id: notification-service
+              uri: lb://notification-service
+              predicates:
+                - Path=/api/notifications/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    instance-id: ${spring.application.name}:${random.uuid}
+    prefer-ip-address: true

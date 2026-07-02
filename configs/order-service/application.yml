@@ -1,0 +1,56 @@
+# Common (profile-agnostic) configuration for order-service, served by config-server.
+server:
+  port: 0
+
+spring:
+  # H2 in-memory database backing the Outbox, the Inbox and the local customer replica tables.
+  datasource:
+    url: jdbc:h2:mem:orderdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+  h2:
+    console:
+      path: /h2-console
+      settings:
+        web-allow-others: true
+  cloud:
+    # Consumer function reading customer lifecycle events (order-service also produces via StreamBridge).
+    function:
+      definition: customerEvents
+    stream:
+      bindings:
+        # Producer: the outbox relay sends OrderCreated payloads here -> Kafka topic "order-created"
+        orderCreated-out-0:
+          destination: order-created
+        # Consumer: "customerEvents" applies each event to the local customer replica (Inbox pattern).
+        customerEvents-in-0:
+          destination: customer-events
+          group: order-service
+
+# Transactional Outbox polling publisher (Spring @Scheduled).
+outbox:
+  poller:
+    fixed-delay: 15000   # ms between polls
+    batch-size: 100      # max events published per poll
+    max-retry: 5         # relay attempts before an event is marked FAILED
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    instance-id: ${spring.application.name}:${random.uuid}
+    prefer-ip-address: true

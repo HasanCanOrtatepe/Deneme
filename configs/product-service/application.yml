@@ -1,0 +1,28 @@
+# Common (profile-agnostic) configuration for product-service, served by config-server.
+server:
+  port: 0
+
+spring:
+  cloud:
+    function:
+      definition: orderCreated
+    stream:
+      bindings:
+        # Consumer: "orderCreated" function reads Kafka topic "order-created"
+        orderCreated-in-0:
+          destination: order-created
+          group: product-service
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    instance-id: ${spring.application.name}:${random.uuid}
+    prefer-ip-address: true

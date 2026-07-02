@@ -11,20 +11,15 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>eureka-server</artifactId>
-    <name>eureka-server</name>
-    <description>Service discovery server (Netflix Eureka)</description>
+    <artifactId>config-server</artifactId>
+    <name>config-server</name>
+    <description>Centralized configuration server (Spring Cloud Config)</description>
 
     <dependencies>
-        <!-- Spring Cloud Config client: pulls configuration from config-server at startup. -->
+        <!-- Spring Cloud Config Server: serves configuration from the Git repo's configs/ folder. -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-config</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-netflix-eureka-server</artifactId>
+            <artifactId>spring-cloud-config-server</artifactId>
         </dependency>
     </dependencies>
 
