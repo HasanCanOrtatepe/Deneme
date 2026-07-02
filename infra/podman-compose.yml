@@ -1,0 +1,84 @@
+# Etiya11 Microservices - Altyapı (Infrastructure) Compose Dosyası
+#
+# Çalıştırmak için:
+#   cd infra
+#   podman compose -f podman-compose.yml up -d
+#
+# Durdurmak için:
+#   podman compose -f podman-compose.yml down
+#
+# Volume'lerle birlikte tamamen silmek için:
+#   podman compose -f podman-compose.yml down -v
+
+version: "3.8"
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL veritabanı
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: docker.io/library/postgres:16-alpine
+    container_name: etiya-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: productdb
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d productdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - etiya-net
+
+  # ---------------------------------------------------------------------------
+  # Apache Kafka (KRaft modu - Zookeeper'a ihtiyaç duymaz)
+  # ---------------------------------------------------------------------------
+  kafka:
+    image: docker.io/apache/kafka:3.7.0
+    container_name: etiya-kafka
+    restart: unless-stopped
+    ports:
+      # Host (uygulamalar) için dış erişim portu
+      - "9092:9092"
+    environment:
+      # --- KRaft (broker + controller aynı node) ---
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      # --- Listener tanımları ---
+      # PLAINTEXT: container ağı içinden erişim (kafka:29092)
+      # PLAINTEXT_HOST: host makineden erişim (localhost:9092)
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+      # --- Tek node için replikasyon ayarları ---
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+
+      # --- Veri ve cluster ayarları ---
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      CLUSTER_ID: etiya-kafka-cluster-001
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    networks:
+      - etiya-net
+
+volumes:
+  postgres-data:
+  kafka-data:
+
+networks:
+  etiya-net:
+    driver: bridge
