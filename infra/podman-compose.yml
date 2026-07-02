@@ -75,6 +75,67 @@ services:
     networks:
       - etiya-net
 
+  # ---------------------------------------------------------------------------
+  # Keycloak (Kimlik ve Erişim Yönetimi - OAuth2 / OpenID Connect)
+  # ---------------------------------------------------------------------------
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: etiya-keycloak
+    restart: unless-stopped
+    command: start-dev
+    environment:
+      # Admin konsolu giriş bilgileri (http://localhost:8180)
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+
+      # --- Veritabanı (mevcut PostgreSQL container'ı kullanılır) ---
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloakdb
+      KC_DB_USERNAME: postgres
+      KC_DB_PASSWORD: postgres
+
+      # Dev ortamı için HTTP yeterli
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+
+      # Healthcheck endpoint'lerini aç (9000 portundan servis edilir)
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      # 8080 mikroservisler tarafından kullanıldığı için host'ta 8180'e maplendi
+      - "8180:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak-db-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - etiya-net
+
+  # ---------------------------------------------------------------------------
+  # Keycloak için veritabanını oluşturan tek seferlik init container
+  # (postgres imajı sadece POSTGRES_DB'de tanımlı tek DB'yi otomatik oluşturur)
+  # ---------------------------------------------------------------------------
+  keycloak-db-init:
+    image: docker.io/library/postgres:16-alpine
+    container_name: etiya-keycloak-db-init
+    restart: "no"
+    environment:
+      PGPASSWORD: postgres
+    entrypoint: >
+      sh -c "psql -h postgres -U postgres -tc \"SELECT 1 FROM pg_database WHERE datname='keycloakdb'\" | grep -q 1
+      || psql -h postgres -U postgres -c 'CREATE DATABASE keycloakdb'"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - etiya-net
+
 volumes:
   postgres-data:
   kafka-data:
