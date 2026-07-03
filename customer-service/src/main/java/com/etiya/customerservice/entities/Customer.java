@@ -8,7 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 /**
- * Domain entity persisted in the H2 database (table {@code customers}).
+ * Domain entity persisted in the PostgreSQL database (table {@code customers}).
  * The numeric {@link #id} is what other services reference as {@code customerId}.
  */
 @Entity

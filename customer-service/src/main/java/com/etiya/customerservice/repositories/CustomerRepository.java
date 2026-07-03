@@ -4,7 +4,7 @@ import com.etiya.customerservice.entities.Customer;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
- * Spring Data JPA access to the {@code customers} table (H2).
+ * Spring Data JPA access to the {@code customers} table (PostgreSQL).
  */
 public interface CustomerRepository extends JpaRepository<Customer, Integer> {
 

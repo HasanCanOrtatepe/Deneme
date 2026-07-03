@@ -3,7 +3,13 @@
     "allow": [
       "PowerShell(python --version 2>&1)",
       "PowerShell(pip --version 2>&1)",
-      "PowerShell(pipx --version 2>&1)"
+      "PowerShell(pipx --version 2>&1)",
+      "Bash(ls ~/.m2/repository/org/springframework/boot/ | grep -i \"redis\\\\|cache\")",
+      "Read(//c/Users/yigit.yelmenoglu/.m2/repository/org/springframework/boot/**)",
+      "Read(//c/Users/yigit.yelmenoglu/.m2/repository/org/springframework/data/spring-data-redis/**)",
+      "Bash(unzip -l ~/.m2/repository/org/springframework/data/spring-data-redis/*/spring-data-redis-*.jar)",
+      "PowerShell($javap = Join-Path $env:JAVA_HOME \"bin\\\\javap.exe\"; if \\(-not \\(Test-Path $javap\\)\\) { $javap = \\(Get-Command javap -ErrorAction SilentlyContinue\\).Source }; & $javap -classpath \"$env:USERPROFILE\\\\.m2\\\\repository\\\\org\\\\springframework\\\\data\\\\spring-data-redis\\\\4.1.0\\\\spring-data-redis-4.1.0.jar\" org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer | Select-Object -First 30)",
+      "PowerShell($mvnCmd = \\(Get-Command mvn\\).Source; Write-Output \"mvn: $mvnCmd\"; Get-ChildItem \"C:\\\\Program Files\" -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match \"Java|jdk|Zulu|Temurin|Eclipse\" } | Select-Object -ExpandProperty FullName)"
     ]
   }
 }

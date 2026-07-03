@@ -3,23 +3,31 @@ server:
   port: 0
 
 spring:
-  # H2 in-memory database backing the Cart aggregate, the Outbox and the Inbox tables.
+  # MySQL database backing the Cart aggregate, the Outbox and the Inbox tables.
+  # (Container: infra/podman-compose.yml -> etiya-mysql, host port 3307 -> container 3306;
+  #  cartdb is created by the one-shot mysql-db-init container.)
   datasource:
-    url: jdbc:h2:mem:cartdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: ""
+    url: ${MYSQL_URL:jdbc:mysql://localhost:3307/cartdb}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${MYSQL_USER:etiya}
+    password: ${MYSQL_PASSWORD:etiya}
   jpa:
     hibernate:
       ddl-auto: update
     properties:
       hibernate:
         format_sql: true
-  h2:
-    console:
-      path: /h2-console
-      settings:
-        web-allow-others: true
+  # Redis-backed cache for the active cart reads/writes (see CartManager and CacheConfig).
+  # (Container: infra/podman-compose.yml -> etiya-redis, port 6379)
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  cache:
+    type: redis
+    redis:
+      time-to-live: 10m
+      cache-null-values: false
   cloud:
     # Consumer function reading customer lifecycle events (cart-service also produces via StreamBridge).
     function:

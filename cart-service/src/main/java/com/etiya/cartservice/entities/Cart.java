@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Shopping cart aggregate persisted in H2 (table {@code carts}). A customer has at most one
+ * Shopping cart aggregate persisted in MySQL (table {@code carts}). A customer has at most one
  * {@link CartStatus#ACTIVE} cart at a time; checking it out flips it to
  * {@link CartStatus#CHECKED_OUT} and a fresh active cart is created on the next add.
  */

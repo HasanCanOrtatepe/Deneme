@@ -7,3 +7,10 @@ spring:
     active: local
   config:
     import: configserver:${CONFIG_SERVER_URI:http://localhost:8888}
+  # OAuth2 Resource Server: gelen JWT'ler Keycloak realm'i üzerinden doğrulanır.
+  # issuer-uri'den JWK (public key) uçları otomatik keşfedilir; JwtDecoder bean'i buradan kurulur.
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/etiya-project}

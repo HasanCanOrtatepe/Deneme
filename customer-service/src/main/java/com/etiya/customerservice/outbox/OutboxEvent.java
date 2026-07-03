@@ -12,7 +12,7 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 
 /**
- * A message queued in the Transactional Outbox table (H2).
+ * A message queued in the Transactional Outbox table (PostgreSQL).
  *
  * <p>The business layer records a row here in the same transaction that writes the customer,
  * instead of publishing to Kafka directly. A {@link OutboxMessageRelay polling relay} later reads

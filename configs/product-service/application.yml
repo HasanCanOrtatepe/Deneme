@@ -3,6 +3,37 @@ server:
   port: 0
 
 spring:
+  # OAuth2 Resource Server: Keycloak realm'i üzerinden gelen JWT'leri doğrular.
+  # issuer-uri'den JWK (public key) uçları otomatik keşfedilir.
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/etiya-project}
+  # PostgreSQL database backing the products table.
+  # (Container: infra/podman-compose.yml -> etiya-postgres, host port 5433 -> container 5432)
+  datasource:
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5433/productdb}
+    driver-class-name: org.postgresql.Driver
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+  # Redis-backed cache for product reads/writes (see ProductManager and CacheConfig).
+  # (Container: infra/podman-compose.yml -> etiya-redis, port 6379)
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  cache:
+    type: redis
+    redis:
+      time-to-live: 10m
+      cache-null-values: false
   cloud:
     function:
       definition: orderCreated

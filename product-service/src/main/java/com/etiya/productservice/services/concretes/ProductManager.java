@@ -11,6 +11,10 @@ import com.etiya.productservice.services.dtos.responses.GetAllProductsResponse;
 import com.etiya.productservice.services.dtos.responses.GetByIdProductResponse;
 import com.etiya.productservice.services.dtos.responses.UpdatedProductResponse;
 import com.etiya.productservice.services.exceptions.BusinessException;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,6 +22,9 @@ import java.util.List;
 /**
  * Business layer implementation. Maps between request/response DTOs and the entity,
  * and applies business rules before delegating to the data access layer.
+ *
+ * <p>Reads and writes go through the Redis-backed {@code products} (by id) and
+ * {@code productsList} (the full list) caches; see {@link com.etiya.productservice.config.CacheConfig}.</p>
  */
 @Service
 public class ProductManager implements ProductService {
@@ -29,6 +36,9 @@ public class ProductManager implements ProductService {
     }
 
     @Override
+    @Caching(
+            put = @CachePut(cacheNames = "products", key = "#result.id"),
+            evict = @CacheEvict(cacheNames = "productsList", allEntries = true))
     public CreatedProductResponse add(CreateProductRequest request) {
         Product product = new Product();
         product.setName(request.getName());
@@ -47,6 +57,9 @@ public class ProductManager implements ProductService {
     }
 
     @Override
+    @Caching(
+            put = @CachePut(cacheNames = "products", key = "#result.id"),
+            evict = @CacheEvict(cacheNames = "productsList", allEntries = true))
     public UpdatedProductResponse update(UpdateProductRequest request) {
         Product product = findProductOrThrow(request.getId());
         product.setName(request.getName());
@@ -65,6 +78,9 @@ public class ProductManager implements ProductService {
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "products", key = "#id"),
+            @CacheEvict(cacheNames = "productsList", allEntries = true)})
     public DeletedProductResponse delete(int id) {
         Product product = findProductOrThrow(id);
         productRepository.deleteById(id);
@@ -72,6 +88,7 @@ public class ProductManager implements ProductService {
     }
 
     @Override
+    @Cacheable(cacheNames = "productsList", key = "'all'")
     public List<GetAllProductsResponse> getAll() {
         return productRepository.findAll().stream()
                 .map(product -> new GetAllProductsResponse(
@@ -84,6 +101,7 @@ public class ProductManager implements ProductService {
     }
 
     @Override
+    @Cacheable(cacheNames = "products", key = "#id")
     public GetByIdProductResponse getById(int id) {
         Product product = findProductOrThrow(id);
         return new GetByIdProductResponse(
