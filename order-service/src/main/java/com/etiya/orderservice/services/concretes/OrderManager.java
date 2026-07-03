@@ -14,7 +14,12 @@ import com.etiya.orderservice.services.dtos.responses.GetAllOrdersResponse;
 import com.etiya.orderservice.services.dtos.responses.GetByIdOrderResponse;
 import com.etiya.orderservice.services.dtos.responses.UpdatedOrderResponse;
 import com.etiya.orderservice.services.exceptions.BusinessException;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -22,6 +27,9 @@ import java.util.List;
 /**
  * Business layer implementation. Maps between request/response DTOs and the entity,
  * and applies business rules before delegating to the data access layer.
+ *
+ * <p>Reads and writes go through the Redis-backed {@code orders} (by id) and {@code ordersList}
+ * (the full list) caches; see {@link com.etiya.orderservice.config.CacheConfig}.</p>
  */
 @Service
 public class OrderManager implements OrderService {
@@ -42,6 +50,10 @@ public class OrderManager implements OrderService {
     }
 
     @Override
+    @Transactional // the order row and its outbox row must commit atomically (Transactional Outbox)
+    @Caching(
+            put = @CachePut(cacheNames = "orders", key = "#result.id"),
+            evict = @CacheEvict(cacheNames = "ordersList", allEntries = true))
     public CreatedOrderResponse add(CreateOrderRequest request) {
         // Async cross-service check: the customer is validated against the locally replicated view
         // kept up to date from "customer-events" — no synchronous call to customer-service.
@@ -88,6 +100,9 @@ public class OrderManager implements OrderService {
     }
 
     @Override
+    @Caching(
+            put = @CachePut(cacheNames = "orders", key = "#result.id"),
+            evict = @CacheEvict(cacheNames = "ordersList", allEntries = true))
     public UpdatedOrderResponse update(UpdateOrderRequest request) {
         Order order = findOrderOrThrow(request.getId());
         order.setCustomerId(request.getCustomerId());
@@ -110,6 +125,9 @@ public class OrderManager implements OrderService {
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "orders", key = "#id"),
+            @CacheEvict(cacheNames = "ordersList", allEntries = true)})
     public DeletedOrderResponse delete(int id) {
         Order order = findOrderOrThrow(id);
         orderRepository.deleteById(id);
@@ -117,6 +135,7 @@ public class OrderManager implements OrderService {
     }
 
     @Override
+    @Cacheable(cacheNames = "ordersList", key = "'all'")
     public List<GetAllOrdersResponse> getAll() {
         return orderRepository.findAll().stream()
                 .map(order -> new GetAllOrdersResponse(
@@ -131,6 +150,7 @@ public class OrderManager implements OrderService {
     }
 
     @Override
+    @Cacheable(cacheNames = "orders", key = "#id")
     public GetByIdOrderResponse getById(int id) {
         Order order = findOrderOrThrow(id);
         return new GetByIdOrderResponse(

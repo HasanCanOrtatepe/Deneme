@@ -2,6 +2,7 @@ package com.etiya.notificationservice.controllers;
 
 import java.util.List;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,6 +15,10 @@ import com.etiya.notificationservice.services.dtos.responses.GetNotificationResp
 /**
  * Read-only view over the notification log. notification-service has no write endpoints — it is
  * driven entirely by events; these endpoints just expose what it has produced.
+ *
+ * <p>Results are served from the Redis-backed {@code notifications} cache; entries are evicted by
+ * {@link com.etiya.notificationservice.messaging.NotificationEventHandler} whenever a new
+ * notification is written. See {@link com.etiya.notificationservice.config.CacheConfig}.</p>
  */
 @RestController
 @RequestMapping("/api/notifications")
@@ -26,6 +31,7 @@ public class NotificationsController {
     }
 
     @GetMapping
+    @Cacheable(cacheNames = "notifications", key = "'all'")
     public List<GetNotificationResponse> getAll() {
         return notificationRepository.findAll().stream()
                 .map(this::toResponse)
@@ -33,6 +39,7 @@ public class NotificationsController {
     }
 
     @GetMapping("/{customerId}")
+    @Cacheable(cacheNames = "notifications", key = "#customerId")
     public List<GetNotificationResponse> getByCustomer(@PathVariable int customerId) {
         return notificationRepository.findByCustomerIdOrderByIdDesc(customerId).stream()
                 .map(this::toResponse)

@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 /**
- * Spring Data JPA access to the {@code notifications} table (H2).
+ * Spring Data JPA access to the {@code notifications} table (PostgreSQL).
  */
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 

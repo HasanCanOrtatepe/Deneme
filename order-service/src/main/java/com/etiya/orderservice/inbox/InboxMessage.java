@@ -8,7 +8,7 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 
 /**
- * Idempotency checkpoint for the Inbox pattern (H2).
+ * Idempotency checkpoint for the Inbox pattern (MySQL).
  *
  * <p>Before applying an incoming event, the consumer checks whether its {@code eventId} already
  * exists here. Because the broker delivers <em>at-least-once</em>, this guards against re-processing

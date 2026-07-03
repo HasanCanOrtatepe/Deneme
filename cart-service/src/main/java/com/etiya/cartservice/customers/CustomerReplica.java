@@ -9,7 +9,7 @@ import jakarta.persistence.Table;
  * Local read-model of a customer, kept eventually consistent from {@code customer-events}.
  *
  * <p>cart-service never calls customer-service synchronously. Instead it replicates the minimum
- * customer data it needs into this table (H2) by consuming customer lifecycle events, so it can
+ * customer data it needs into this table (MySQL) by consuming customer lifecycle events, so it can
  * validate a cart's {@code customerId} locally. The id mirrors the customer-service primary key.</p>
  */
 @Entity

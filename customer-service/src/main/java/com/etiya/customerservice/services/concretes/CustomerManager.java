@@ -14,6 +14,10 @@ import com.etiya.customerservice.services.dtos.responses.GetAllCustomersResponse
 import com.etiya.customerservice.services.dtos.responses.GetByIdCustomerResponse;
 import com.etiya.customerservice.services.dtos.responses.UpdatedCustomerResponse;
 import com.etiya.customerservice.services.exceptions.BusinessException;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +28,9 @@ import java.util.UUID;
  * Business layer implementation. Maps between request/response DTOs and the entity, applies business
  * rules, and — in the same transaction as the DB write — records a {@link CustomerEvent} in the
  * outbox so the change is published to other services without any synchronous call.
+ *
+ * <p>Reads and writes go through the Redis-backed {@code customers} (by id) and
+ * {@code customersList} (the full list) caches; see {@link com.etiya.customerservice.config.CacheConfig}.</p>
  */
 @Service
 public class CustomerManager implements CustomerService {
@@ -42,6 +49,9 @@ public class CustomerManager implements CustomerService {
 
     @Override
     @Transactional
+    @Caching(
+            put = @CachePut(cacheNames = "customers", key = "#result.id"),
+            evict = @CacheEvict(cacheNames = "customersList", allEntries = true))
     public CreatedCustomerResponse add(CreateCustomerRequest request) {
         if (customerRepository.existsByEmail(request.getEmail())) {
             throw new BusinessException("A customer already exists with email: " + request.getEmail());
@@ -67,6 +77,9 @@ public class CustomerManager implements CustomerService {
 
     @Override
     @Transactional
+    @Caching(
+            put = @CachePut(cacheNames = "customers", key = "#result.id"),
+            evict = @CacheEvict(cacheNames = "customersList", allEntries = true))
     public UpdatedCustomerResponse update(UpdateCustomerRequest request) {
         Customer customer = findCustomerOrThrow(request.getId());
         customer.setFirstName(request.getFirstName());
@@ -88,6 +101,9 @@ public class CustomerManager implements CustomerService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "customers", key = "#id"),
+            @CacheEvict(cacheNames = "customersList", allEntries = true)})
     public DeletedCustomerResponse delete(int id) {
         Customer customer = findCustomerOrThrow(id);
         customerRepository.deleteById(id);
@@ -98,6 +114,7 @@ public class CustomerManager implements CustomerService {
     }
 
     @Override
+    @Cacheable(cacheNames = "customersList", key = "'all'")
     public List<GetAllCustomersResponse> getAll() {
         return customerRepository.findAll().stream()
                 .map(customer -> new GetAllCustomersResponse(
@@ -110,6 +127,7 @@ public class CustomerManager implements CustomerService {
     }
 
     @Override
+    @Cacheable(cacheNames = "customers", key = "#id")
     public GetByIdCustomerResponse getById(int id) {
         Customer customer = findCustomerOrThrow(id);
         return new GetByIdCustomerResponse(

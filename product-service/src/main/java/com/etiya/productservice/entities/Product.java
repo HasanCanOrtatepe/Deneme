@@ -1,16 +1,35 @@
 package com.etiya.productservice.entities;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
 import java.math.BigDecimal;
 
 /**
- * Domain entity. Persistence is in-memory for now; later this can be mapped to a DB table.
+ * Domain entity, persisted in the PostgreSQL {@code products} table.
  */
+@Entity
+@Table(name = "products")
 public class Product {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+
+    @Column(nullable = false)
     private String name;
+
+    @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal unitPrice;
+
+    @Column(nullable = false)
     private int stock;
+
+    @Column(length = 2000)
     private String description;
 
     public Product() {

@@ -9,6 +9,7 @@ import com.etiya.notificationservice.inbox.InboxRepository;
 import com.etiya.notificationservice.repositories.NotificationRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +22,10 @@ import java.time.Instant;
  * <p>Each {@code handle*} method runs in one transaction: the inbox checkpoint and the notification
  * row commit together. Because the brokers deliver <em>at-least-once</em>, the {@link InboxRepository}
  * lookup makes sure a re-delivered event never produces a duplicate notification.</p>
+ *
+ * <p>Each {@code handle*} method also evicts the whole {@code notifications} cache on successful
+ * completion, so a newly written notification is not masked by a stale cached list (see
+ * {@link com.etiya.notificationservice.controllers.NotificationsController}).</p>
  */
 @Service
 public class NotificationEventHandler {
@@ -37,6 +42,7 @@ public class NotificationEventHandler {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "notifications", allEntries = true)
     public void handleOrderCreated(OrderCreatedEvent event) {
         // OrderCreated carries no unique event id, so derive a stable natural key: one per order.
         String messageId = "OrderCreated:" + event.orderId();
@@ -50,6 +56,7 @@ public class NotificationEventHandler {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "notifications", allEntries = true)
     public void handleCustomerEvent(CustomerEvent event) {
         if (event == null || event.eventId() == null) {
             log.warn("Discarding customer event with no eventId: {}", event);
@@ -70,6 +77,7 @@ public class NotificationEventHandler {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "notifications", allEntries = true)
     public void handleCartCheckedOut(CartCheckedOutEvent event) {
         if (event == null || event.eventId() == null) {
             log.warn("Discarding cart-checked-out event with no eventId: {}", event);

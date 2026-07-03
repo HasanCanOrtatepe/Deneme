@@ -1,9 +1,6 @@
 spring:
   jpa:
     show-sql: true
-  h2:
-    console:
-      enabled: true       # UI: http://<host>:<port>/h2-console  (JDBC URL: jdbc:h2:mem:notificationdb, user: sa)
   cloud:
     stream:
       kafka:

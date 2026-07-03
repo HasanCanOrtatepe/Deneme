@@ -8,7 +8,7 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 
 /**
- * Idempotency checkpoint for the Inbox pattern (H2).
+ * Idempotency checkpoint for the Inbox pattern (PostgreSQL).
  *
  * <p>Before turning an incoming event into a notification, the consumer checks whether its
  * {@code messageId} already exists here. Because the broker delivers <em>at-least-once</em>, this

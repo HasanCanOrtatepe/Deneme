@@ -10,7 +10,7 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 
 /**
- * Audit log of a notification the service "sent" (here: logged), persisted in H2.
+ * Audit log of a notification the service "sent" (here: logged), persisted in PostgreSQL.
  * One row is written per successfully handled inbound event.
  */
 @Entity

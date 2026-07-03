@@ -14,6 +14,9 @@ import com.etiya.cartservice.services.dtos.responses.CartItemResponse;
 import com.etiya.cartservice.services.dtos.responses.CartResponse;
 import com.etiya.cartservice.services.dtos.responses.CheckedOutCartResponse;
 import com.etiya.cartservice.services.exceptions.BusinessException;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +27,9 @@ import java.util.UUID;
  * Business layer implementation. Manages a customer's active cart and, on checkout, records a
  * {@link CartCheckedOutEvent} in the outbox (same transaction as the DB write) so it is published
  * to other services without any synchronous call.
+ *
+ * <p>The active cart is cached in Redis keyed by {@code customerId} (cache {@code activeCarts});
+ * see {@link com.etiya.cartservice.config.CacheConfig}.</p>
  */
 @Service
 public class CartManager implements CartService {
@@ -45,6 +51,7 @@ public class CartManager implements CartService {
 
     @Override
     @Transactional
+    @CachePut(cacheNames = "activeCarts", key = "#request.customerId")
     public CartResponse addItem(AddCartItemRequest request) {
         // Async cross-service check: the customer is validated against the locally replicated view
         // kept up to date from "customer-events" — no synchronous call to customer-service.
@@ -58,12 +65,14 @@ public class CartManager implements CartService {
     }
 
     @Override
+    @Cacheable(cacheNames = "activeCarts", key = "#customerId")
     public CartResponse getActiveCart(int customerId) {
         return toCartResponse(findActiveCartOrThrow(customerId));
     }
 
     @Override
     @Transactional
+    @CachePut(cacheNames = "activeCarts", key = "#customerId")
     public CartResponse removeItem(int customerId, int productId) {
         Cart cart = findActiveCartOrThrow(customerId);
         cart.removeItem(productId);
@@ -72,6 +81,7 @@ public class CartManager implements CartService {
 
     @Override
     @Transactional
+    @CachePut(cacheNames = "activeCarts", key = "#customerId")
     public CartResponse clear(int customerId) {
         Cart cart = findActiveCartOrThrow(customerId);
         cart.clear();
@@ -80,6 +90,7 @@ public class CartManager implements CartService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "activeCarts", key = "#customerId")
     public CheckedOutCartResponse checkout(int customerId) {
         Cart cart = findActiveCartOrThrow(customerId);
         if (cart.getItems().isEmpty()) {
